@@ -84,13 +84,13 @@ with graph.as_default():
     # 平均损失
     mean_loss = tf.reduce_mean(losses)
 
-    # 定义优化器，指定要优化的损失函数
-    optimizer = tf.train.AdamOptimizer(learning_rate=1e-2).minimize(losses)
+    # # 定义优化器，指定要优化的损失函数
+    # optimizer = tf.train.AdamOptimizer(learning_rate=1e-2).minimize(losses)
 
     correct_prediction = tf.equal(tf.cast(predicted_labels, tf.int32), labels_placeholder)
     acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-    init = tf.initialize_all_variables()
+    # init = tf.initialize_all_variables()
 
 
 
@@ -125,35 +125,22 @@ with tf.Session(
         graph=graph) as sess:
     # 用于保存和载入模型#要放在session里面才可以
     saver = tf.train.Saver()
+    saver.restore(sess, model_path)
+    n_epoch = 1
+    batch_size = 100
 
-    n_epoch = 100
-    batch_size = 64
-
-    sess.run(init)
+    # sess.run(init)
     for epoch in range(n_epoch):
         start_time = time.time()
-
-        # training
-        train_loss, train_acc, n_batch = 0, 0, 0
-        for x_train_a, y_train_a in minibatches(datas, labels, batch_size, shuffle=True):
-            _, err, ac = sess.run([optimizer, mean_loss,acc], feed_dict={datas_placeholder: x_train_a, labels_placeholder: y_train_a,dropout_placeholdr: 0.25})
-            train_loss += err;
-            train_acc += ac;
+        # validation
+        val_loss, val_acc, n_batch = 0, 0, 0
+        for x_val_a, y_val_a in minibatches(datas, labels, batch_size, shuffle=False):
+            err, ac = sess.run([mean_loss, acc], feed_dict={datas_placeholder: x_val_a, labels_placeholder: y_val_a,dropout_placeholdr: 0})
+            val_loss += err;
+            val_acc += ac;
             n_batch += 1
-        print("   train loss: %f" % (train_loss / n_batch))
-        print("   train acc: %f" % (train_acc / n_batch))
-    saver.save(sess, model_path)
-    print("训练结束，保存模型到{}".format(model_path))
-
-        # # validation
-        # val_loss, val_acc, n_batch = 0, 0, 0
-        # for x_val_a, y_val_a in minibatches(x_val, y_val, batch_size, shuffle=False):
-        #     err, ac = sess.run([loss, acc], feed_dict={x: x_val_a, y_: y_val_a})
-        #     val_loss += err;
-        #     val_acc += ac;
-        #     n_batch += 1
-        # print("   validation loss: %f" % (val_loss / n_batch))
-        # print("   validation acc: %f" % (val_acc / n_batch))
+        print("   validation loss: %f" % (val_loss / n_batch))
+        print("   validation acc: %f" % (val_acc / n_batch))
 
     # if train:
     #     print("训练模式")
